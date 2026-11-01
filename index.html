@@ -224,7 +224,12 @@
       document.getElementById('recTimer').style.display = 'none';
 
       try {
-        // ফুল এইচডি রেজুলেশন ও সাউন্ড পারফেক্ট কনফিগারেশন
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          alert("Camera API is not supported in this WebView. Please check app permissions.");
+          closeCameraModal();
+          return;
+        }
+
         mediaStream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: currentMode === 'video' ? { echoCancellation: true, noiseSuppression: true } : false
@@ -241,7 +246,7 @@
           captureBtn.onclick = takeSnapshot;
         }
       } catch (err) {
-        alert("Camera or Microphone permission denied!");
+        alert("Camera or Microphone permission denied or not allowed by app! Please allow camera permission in phone settings.");
         closeCameraModal();
       }
     }
@@ -410,6 +415,7 @@
         const blob = await response.blob();
         const file = new File([blob], filename, { type: mimetype });
 
+        // AppsGeyser বা WebView-এ navigator.share ব্লক থাকলে সরাসরি ডাউনలోড ফলব্যাক করবে
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
             files: [file],
@@ -417,15 +423,21 @@
             text: 'Shared from Vault Pro App by Muntashir Al Hera'
           });
         } else {
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = filename;
-          a.click();
-          alert("File downloaded! Now you can easily attach and send it on Messenger, WhatsApp or anywhere.");
+          downloadDirectly(url, filename);
         }
       } catch (err) {
-        console.log("Share cancelled or not supported directly.");
+        // যদি শেয়ার উইন্ডো ক্যানসেল হয় বা কাজ না করে তবে সরাসরি ডাউনলোড হবে
+        downloadDirectly(url, filename);
       }
+    }
+
+    function downloadDirectly(url, filename) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     }
   </script>
 </body>
