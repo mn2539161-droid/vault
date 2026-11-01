@@ -409,13 +409,13 @@
       }
     }
 
+    // Direct Native Sharing (Messenger, WhatsApp, Telegram, etc.)
     async function shareMedia(url, filename, mimetype) {
       try {
         const response = await fetch(url);
         const blob = await response.blob();
         const file = new File([blob], filename, { type: mimetype });
 
-        // AppsGeyser বা WebView-এ navigator.share ব্লক থাকলে সরাসরি ডাউনలోড ফলব্যাক করবে
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
             files: [file],
@@ -423,21 +423,18 @@
             text: 'Shared from Vault Pro App by Muntashir Al Hera'
           });
         } else {
-          downloadDirectly(url, filename);
+          // Fallback if direct share sheet is not supported by wrapper
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          alert("Sharing not supported directly here. File downloaded to device storage.");
         }
       } catch (err) {
-        // যদি শেয়ার উইন্ডো ক্যানসেল হয় বা কাজ না করে তবে সরাসরি ডাউনলোড হবে
-        downloadDirectly(url, filename);
+        console.log("Share action cancelled or failed.");
       }
-    }
-
-    function downloadDirectly(url, filename) {
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
     }
   </script>
 </body>
